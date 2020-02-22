@@ -244,7 +244,7 @@ class Rvg():
         self.sourceChannel = paramDict['source_channel']
         self.sourceVolt = paramDict['sourceVolt']
         self.gateChannel = paramDict['gate_channel']
-        self.gateSweep = paramDict['gateSweep']
+        self.gateSweep = paramDict.get('gateSweep')
         self.dataLocation = paramDict['dataLocation']
         if not os.path.exists(self.dataLocation):
             os.makedirs(self.dataLocation)
@@ -270,28 +270,86 @@ class Rvg():
         Vg = self.voltageLoop()
         data = np.zeros((len(Vg),7))
         timeStamp = {'timeStamp':[]}
-        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg),
-                                                            max(Vg),
+        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg), max(Vg),
                                                             self.sourceVolt*1000,
                                                             dt.now().strftime("%H-%M-%S"))
+        data = np.zeros(len(Vg),dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
+        columns=['Vg(V).set','Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V)','Ig(uAmp)','timeStamp']
+        data.dtype.names=columns
         for i,v in enumerate(Vg):
             self.smuInst.rampV(self.gateChannel, v, 1, 0.05,verbose = self.verbose)
-            data[i,0] = v
-            data[i,1] = self.smuInst.readKT(self.sourceChannel, 'r') # Rsd Ohm
-            data[i,2] = np.round(self.smuInst.readKT(self.gateChannel, 'r')*1e-9,2) # Rox or Rg GigaOhm
-            data[i,3] = np.round(self.smuInst.readKT(self.sourceChannel, 'v')*1e3,2) # Vs mV
-            data[i,4] = np.round(self.smuInst.readKT(self.sourceChannel, 'i')*1e6,2) # Is uAmp
-            data[i,5] = np.round(self.smuInst.readKT(self.gateChannel, 'v'),2) # Vg V
-            data[i,6] = np.round(self.smuInst.readKT(self.gateChannel, 'i')*1e6,2) # Ig uAmp
+            data[i][0] = v
+            data[i][1] = self.smuInst.readKT(self.sourceChannel, 'r') # Rsd Ohm
+            data[i][2] = np.round(self.smuInst.readKT(self.gateChannel, 'r')*1e-9,2) # Rox or Rg GigaOhm
+            data[i][3] = np.round(self.smuInst.readKT(self.sourceChannel, 'v')*1e3,2) # Vs mV
+            data[i][4] = np.round(self.smuInst.readKT(self.sourceChannel, 'i')*1e6,2) # Is uAmp
+            data[i][5] = np.round(self.smuInst.readKT(self.gateChannel, 'v'),2) # Vg V
+            data[i][6] = np.round(self.smuInst.readKT(self.gateChannel, 'i')*1e6,2) # Ig uAmp
             #print('Vg: {0:2.2f} V, Rsd: {1:.2f} Ohm, Rox: {2:.2f} gigaOhm'.format(data[i,0],data[i,1],data[i,2]))
-            timeStamp['timeStamp'].append(dt.now())
+            data[i][7] = np.datetime64(dt.now())
 
-        dataDB = pd.DataFrame(data,columns=['Vg(V).set','Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V).get','Ig(uAmp)'])
-        dataDB = pd.concat([dataDB, pd.DataFrame(timeStamp)],axis=1)
+        dataDB = pd.DataFrame(data)
         if saveData:
             dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
             dataDB.to_csv(os.path.join(self.dataLocation,fileName),index=None)
         return (dataDB,fileName)
+
+
+    def closeExperiment(self):
+        self.smuInst.rampDown(self.sourceChannel,100)
+        self.smuInst.rampDown(self.gateChannel,100)
+        self.smuInst.close()
+
+
+class CurrentAnneal(Rvg):
+    """This implementation of RVG is for KT2461"""
+
+    def __init__(self, paramDict,verbose = False):
+
+        Rvg.__init__(paramDict,verbose)
+        self.gateVolt = paramDict.get('gateVolt')
+        self.dataPoints = paramDict.get('dataPoints')
+
+
+    def setExperiment(self):
+        self.smuInst.rampV(self.sourceChannel, self.sourceVolt,5,verbose = self.verbose)
+        self.smuInst.rampV(self.sourceChannel, self.gateVolt,5,verbose = self.verbose)
+
+
+    def startExperiment(self,saveData=True, externalDB = None):
+        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg),
+                                                            max(Vg),
+                                                            self.sourceVolt*1000,
+                                                            dt.now().strftime("%H-%M-%S"))
+        data2csv = np.zeros(len(range(10)),dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
+        columns=['Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V)','Ig(uAmp)','timeStamp']
+        data2csv.dtype.names=columns
+        for i in range(self.dataPoints):
+            # Rsd = self.smuInst.readKT(self.sourceChannel, 'r') # Rsd Ohm
+            # t = np.datetime64(dt.now())
+            # Rox = np.round(self.smuInst.readKT(self.gateChannel, 'r')*1e-9,2) # Rox or Rg GigaOhm
+            # Vs = np.round(self.smuInst.readKT(self.sourceChannel, 'v')*1e3,2) # Vs mV
+            # Is = np.round(self.smuInst.readKT(self.sourceChannel, 'i')*1e6,2) # Is uAmp
+            # Vg = np.round(self.smuInst.readKT(self.gateChannel, 'v'),2) # Vg V
+            # Ig = np.round(self.smuInst.readKT(self.gateChannel, 'i')*1e6,2) # Ig uAmp
+            # data2csv[i] = (Rsd,Rox,Vs,Is,Vg,Ig,t)
+            # dataDB = pd.DataFrame([[Rsd,Rox,Vs,Is,Vg,Ig,t]],columns=columns)
+            # dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
+            if externalDB:
+                row = externalDB[1](Rsd = np.random.randint(0,100),
+                        Rg = np.random.randint(0,100),
+                        Vs = np.random.randint(0,100),
+                        Is = np.random.randint(0,100),
+                        Vg = np.random.randint(0,100),
+                        Ig = np.random.randint(0,100),
+                        timeStamp = np.datetime64(dt.now()).astype(dt))
+                externalDB[0].session.add(row)
+                externalDB[0].session.commit()
+
+        if saveData:
+            df = pd.DataFrame(data2csv)
+            df.to_csv(os.path.join(self.dataLocation,fileName),index=None)
+        return (df,fileName)
 
 
     def closeExperiment(self):
