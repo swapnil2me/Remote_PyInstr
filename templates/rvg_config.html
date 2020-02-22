@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+    <form class="set" action="/index/rvgRun/" method="post">
+      <button id="run" name="RunRVG" type="submit" onclick="runIndicator()">RunRVG</button>
+    </form>
+    <script>
+    function runIndicator() {
+        document.getElementById("run").style.color = "red";
+        document.getElementById("run").innerHTML = "Exp Running"
+    }
+    </script>
+  </body>
+</html>
