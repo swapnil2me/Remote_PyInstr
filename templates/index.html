@@ -5,9 +5,11 @@
     <title></title>
   </head>
   <body>
+    <h3>Available Experiments</h3>
     {% for exp in available_exp %}
         <a href="/index/{{exp}}Conf/">{{ exp|e }}</a>
     {% endfor %}
-
+    <h3>Available Plots</h3>
+    <a href="/index/plotData-rvg/">rvg</a>
   </body>
 </html>

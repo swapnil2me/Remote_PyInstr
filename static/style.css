@@ -1,0 +1,57 @@
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+line {
+  stroke: red;
+}
+
+#liveRun {
+    margin: 0 auto;
+ }
+
+.liveRun {
+    height: 500px;
+    width: 700px;
+}
+
+#imageSC {
+    margin: 0 auto;
+ }
+.imageSC {
+    height: 400px;
+    width: 700px;
+}
+
+.fwd {
+  stroke: red;
+  fill: none;
+  stroke-width: 2px;
+}
+
+.bkw {
+  stroke: blue;
+  fill: none;
+  stroke-width: 2px;
+}
+
+g.group0 path,
+g.group0 circle {
+  stroke: red;
+  fill:none;
+}
+
+g.hidden line,
+g.hidden path {
+  display: none;
+}
+
+g.tick line{
+  stroke: blue;
+}
+
+g.tick text{
+  font-size: 12px;
+  fill: purple;
+}

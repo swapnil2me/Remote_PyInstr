@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="{{url_for('static', filename='style.css')}}">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+    <script src="{{url_for('static', filename='d3.v4.js')}}"></script>
+    <title></title>
+  </head>
+  <body>
+    <a href="/index/getData-{{experiment_name}}">{{experiment_name}}</a>
+
+    <div class="card" >
+      <div class="card-header" align="center"><h3>Current Anneal</h3></div>
+      <div id="liveRun">
+
+
+      </div>
+    </div>
+
+    <script type="text/javascript">
+
+      var parseDate = d3.timeParse("%Y-%m-%d %H:%M:%S.%f");
+      var experiment = "{{experiment_name}}";
+      var apiURL = "http://127.0.0.1:8000/index/getData-"+experiment;
+      var times = 500; // gap in Milli Seconds;
+      console.log(apiURL);
+
+
+      setInterval(refreshPlot, times);
+      //refreshPlot();
+      function refreshPlot() {
+          d3.json(apiURL).get(function(error,plotData){
+            var svgtest = d3.select("#liveRun").select("svg");
+            if (!svgtest.empty()) {
+              console.log("updating live plot!");
+              svgtest.remove();
+            }
+
+            var timeStamp = plotData.timeStamp.slice(-500).map(function (d) {
+                                                    return parseDate(d);
+                                                  });
+            var rsd = plotData.Rsd.slice(-500);
+            var dataZipFwd = timeStamp.map(function (e,i) {return [e, rsd[i]];});
+
+            var height = 400;
+            var width = 700;
+
+            var maxX = d3.max(timeStamp);
+            var minX = d3.min(timeStamp);
+
+            var minY = d3.min(rsd);
+            var maxY = d3.max(rsd);
+
+            var y = d3.scaleLinear()
+                      .domain([minY,maxY])
+                      .range([300,0]);
+
+            var x = d3.scaleTime()
+                      .domain([minX, maxX])
+                      .range([0, 500]);
+
+            var yAxis = d3.axisLeft(y);
+            var xAxis = d3.axisBottom(x);
+
+            var svg = d3.select("#liveRun").append("svg")
+                                            .attr("class","liveRun");
+
+            var margin = {left:110, right:50, top:50, bottom:0};
+
+            var chartGroup = svg.append("g")
+                                .attr("transform","translate("+margin.left+","+margin.top+")");
+
+            var line= d3.line()
+                        .x(function (d) {return x(d[0]);})
+                        .y(function (d) {return y(d[1]);});
+
+            chartGroup.append("path")
+                      .attr("class","fwd")
+                      .attr("d",line(dataZipFwd));;
+
+            chartGroup.append("g").attr("class","x axis")
+                                  .attr("transform","translate(0,"+300+")")
+                                  .call(xAxis);
+            chartGroup.append("text")
+                      .attr("transform","translate("+250+","+360+")")
+                      .style("text-anchor", "middle")
+                      .text("Time");
+
+            chartGroup.append("g").attr("class","y axis").call(yAxis);
+            chartGroup.append("text")
+                      .attr("transform", "rotate(-90)")
+                      .attr("y", 0 - margin.left+6)
+                      .attr("x",0 - (height / 2) + 50)
+                      .attr("dy", "1em")
+                      .style("text-anchor", "middle")
+                      .text("Amplitude (nA)");
+          });
+
+
+      }
+    </script>
+
+  </body>
+</html>
