@@ -31,17 +31,17 @@ app = Flask(__name__)
 baseDir = os.getcwd()
 runCheckFile = os.path.join(baseDir,'runnig.txt')
 dataDir = r"/mnt/5a576321-1b84-46e6-ba92-46de6b117d92/GitHub/dataDir/"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(dataDir, 'data.db')
-engine = create_engine('sqlite:///'+os.path.join(dataDir, 'data.db'), echo=False)
-db = SQLAlchemy(app)
 
+# DB setup
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(dataDir, 'data.db')
+engine = create_engine('sqlite:///'+os.path.join(dataDir, 'experiments.db'), echo=False)
+db = SQLAlchemy(app)
 
 if os.path.exists(runCheckFile):
     os.remove(runCheckFile)
 
 if os.path.exists(os.path.join(dataDir, 'data.db')):
     os.remove(os.path.join(dataDir, 'data.db'))
-
 
 class Rvg(db.Model):
     __tablename__ = 'rvg'
@@ -68,9 +68,25 @@ def db_seed():
     db.session.add(row)
     db.session.commit()
 
+
+# Experiment Definations
+
+paramDict = {'instClass':'KT2461',
+             'address':'169.254.0.1',
+             'source_channel':'a',
+             'sourceVolt':0.05,
+             'gate_channel':'b',
+             'gateVolt':-10,
+             'dataPoints':1000,
+             'dataLocation':dataDir,
+             'experintName':'annealing'}
+
+rvg = exp.CurrentAnneal(paramDict)
+
+# Routes
 @app.route('/index/')
 def index():
-    available_exp = ['rvg']
+    available_exp = [rvg.paramDict['experintName']]
     return render_template('index.html', available_exp = available_exp)
 
 @app.route('/index/rvgConf/')
@@ -83,22 +99,8 @@ def rvgRun():
         runFile = open(runCheckFile,"w")
         runFile.close()
 
-        paramDict = {'instClass':'KT2461',
-                     'address':'169.254.0.1',
-                     'source_channel':'a',
-                     'sourceVolt':0.05,
-                     'gate_channel':'b',
-                     'gateVolt':-10,
-                     'dataPoints':1000,
-                     'dataLocation':dataDir,
-                     'experintName':'annealing'}
-
-        #rvg = exp.CurrentAnneal(paramDict)
-        for i in range(paramDict['dataPoints']):
-            #print(i)
-            db_seed()
-        # rvg.setExperiment()
-        # (df,fileName) = rvg.startExperiment(saveData=True, externalDB=[Rvg,db])
+        #rvg.setExperiment()
+        (df,fileName) = rvg.startExperiment(saveData=True, externalDB=[Rvg,db])
         # rvg.closeExperiment()
         # f, ax = plt.subplots(figsize=(10, 8))
         # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
@@ -106,14 +108,13 @@ def rvgRun():
         # figPath = os.path.join(dataDir,'{}.svg'.format(fileName.split('csv')[0][:-1]))
         # plt.savefig(figPath)
         quer = 'SELECT * FROM {}'.format("rvg")
-        df = pd.read_sql_query(quer,str(engine.url),parse_dates={'timeStamp':"%Y-%m-%d %H:%M:%S.%f"})
         df.plot(x='timeStamp',y='Rsd')
         plt.savefig(os.path.join(dataDir,'rvg.png'))
 
         os.remove(runCheckFile)
         return redirect(url_for('expFiles'))
     else:
-        return redirect(url_for('plotData',experiment_name='rvg'))
+        return redirect(url_for('plotData',experiment_name=rvg.paramDict['experintName']))
 
 @app.route('/index/expFiles/')
 def expFiles():
@@ -123,8 +124,8 @@ def expFiles():
     return render_template('svglist.html',svglist=svglist)
 
 @app.route('/index/expFiles/getsvg-<svgName>')
-def getsvg(svgName):
-    return send_file(os.path.join(dataDir,svgName), as_attachment=True)
+def getsvg(fileName):
+    return send_file(os.path.join(dataDir,fileName), as_attachment=True)
 
 
 @app.route("/index/getData-<experiment_name>/")
