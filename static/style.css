@@ -1,10 +1,19 @@
 html, body {
   margin: 0;
   height: 100%;
+  background-color:#121622;
 }
 
-line {
-  stroke: red;
+a {
+  color: #7bb2ec;
+}
+
+h3 {
+  color: lightgreen;
+}
+
+.card {
+  background-color:#121622;
 }
 
 #liveRun {
@@ -13,45 +22,30 @@ line {
 
 .liveRun {
     height: 500px;
-    width: 700px;
+    width: 900px;
 }
 
-#imageSC {
-    margin: 0 auto;
- }
-.imageSC {
-    height: 400px;
-    width: 700px;
-}
-
-.fwd {
-  stroke: red;
-  fill: none;
-  stroke-width: 2px;
-}
-
-.bkw {
-  stroke: blue;
-  fill: none;
-  stroke-width: 2px;
-}
-
-g.group0 path,
-g.group0 circle {
-  stroke: red;
+g path,
+g circle {
+  stroke:  #faffbd ;
   fill:none;
-}
-
-g.hidden line,
-g.hidden path {
-  display: none;
+  stroke-width: 1.5px;
 }
 
 g.tick line{
-  stroke: blue;
+  stroke: #a2ffbd;
+}
+
+g.axis path{
+  stroke: #a2ffbd;
 }
 
 g.tick text{
   font-size: 12px;
-  fill: purple;
+  fill: #a2ffbd;
+}
+
+.axLabel{
+  font-size: 20px;
+  fill: #a2ffbd;
 }

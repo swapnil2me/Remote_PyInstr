@@ -41,14 +41,15 @@
               svgtest.remove();
             }
 
-            var timeStamp = plotData.timeStamp.slice(-500).map(function (d) {
+            var dataPoints = -1000;
+            var timeStamp = plotData.timeStamp.slice(dataPoints).map(function (d) {
                                                     return parseDate(d);
                                                   });
-            var rsd = plotData.Rsd.slice(-500);
+            var rsd = plotData.Rsd_Ohm.slice(dataPoints);
             var dataZipFwd = timeStamp.map(function (e,i) {return [e, rsd[i]];});
 
             var height = 400;
-            var width = 700;
+            var width = 900;
 
             var maxX = d3.max(timeStamp);
             var minX = d3.min(timeStamp);
@@ -58,11 +59,11 @@
 
             var y = d3.scaleLinear()
                       .domain([minY,maxY])
-                      .range([300,0]);
+                      .range([height-100,0]);
 
             var x = d3.scaleTime()
                       .domain([minX, maxX])
-                      .range([0, 500]);
+                      .range([0, width-200]);
 
             var yAxis = d3.axisLeft(y);
             var xAxis = d3.axisBottom(x);
@@ -80,25 +81,25 @@
                         .y(function (d) {return y(d[1]);});
 
             chartGroup.append("path")
-                      .attr("class","fwd")
                       .attr("d",line(dataZipFwd));;
 
             chartGroup.append("g").attr("class","x axis")
                                   .attr("transform","translate(0,"+300+")")
                                   .call(xAxis);
-            chartGroup.append("text")
-                      .attr("transform","translate("+250+","+360+")")
+
+            chartGroup.append("text").attr("class","axLabel")
+                      .attr("transform","translate("+(width-margin.left-margin.right)/2+","+(height-margin.top)+")")
                       .style("text-anchor", "middle")
                       .text("Time");
 
             chartGroup.append("g").attr("class","y axis").call(yAxis);
-            chartGroup.append("text")
+            chartGroup.append("text").attr("class","axLabel")
                       .attr("transform", "rotate(-90)")
                       .attr("y", 0 - margin.left+6)
                       .attr("x",0 - (height / 2) + 50)
                       .attr("dy", "1em")
                       .style("text-anchor", "middle")
-                      .text("Amplitude (nA)");
+                      .text("Rsd (Ohm)");
           });
 
 
