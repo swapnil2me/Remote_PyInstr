@@ -270,10 +270,11 @@ class Rvg():
         Vg = self.voltageLoop()
         data = np.zeros((len(Vg),7))
         timeStamp = {'timeStamp':[]}
-        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg), max(Vg),
+        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg),
+                                                            max(Vg),
                                                             self.sourceVolt*1000,
                                                             dt.now().strftime("%H-%M-%S"))
-        data = np.zeros(len(Vg),dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
+        data = np.zeros(len(Vg),dtype='f8,f8,f8,f8,f8,f8,f8,datetime64[us]')
         columns=['Vg(V).set','Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V)','Ig(uAmp)','timeStamp']
         data.dtype.names=columns
         for i,v in enumerate(Vg):
@@ -306,22 +307,21 @@ class CurrentAnneal(Rvg):
 
     def __init__(self, paramDict,verbose = False):
 
-        Rvg.__init__(paramDict,verbose)
+        Rvg.__init__(self,paramDict=paramDict,verbose=verbose)
         self.gateVolt = paramDict.get('gateVolt')
         self.dataPoints = paramDict.get('dataPoints')
 
 
     def setExperiment(self):
         self.smuInst.rampV(self.sourceChannel, self.sourceVolt,5,verbose = self.verbose)
-        self.smuInst.rampV(self.sourceChannel, self.gateVolt,5,verbose = self.verbose)
+        self.smuInst.rampV(self.gateChannel, self.gateVolt,5,verbose = self.verbose)
 
 
-    def startExperiment(self,saveData=True, externalDB = None):
-        fileName = 'RVG_Vg_{}_{}_V_Vsd_{}_mV_{}.csv'.format(min(Vg),
-                                                            max(Vg),
+    def startExperiment(self,saveData=True):
+        fileName = 'RVG_Vg_{}_V_Vsd_{}_mV_{}.csv'.format(self.gateVolt,
                                                             self.sourceVolt*1000,
                                                             dt.now().strftime("%H-%M-%S"))
-        data2csv = np.zeros(self.dataPoints),dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
+        data2csv = np.zeros(self.dataPoints,dtype='f8,f8,f8,f8,f8,f8,datetime64[us]')
         columns=['Rsd(Ohm)','Rg(GigaOhm)','Vs(mV)','Is(uAmp)','Vg(V)','Ig(uAmp)','timeStamp']
         data2csv.dtype.names=columns
         for i in range(self.dataPoints):
@@ -335,24 +335,6 @@ class CurrentAnneal(Rvg):
             data2csv[i] = (Rsd,Rox,Vs,Is,Vg,Ig,t)
             dataDB = pd.DataFrame([[Rsd,Rox,Vs,Is,Vg,Ig,t]],columns=columns)
             dataDB.to_sql(self.paramDict['experintName'], con=self.dbEngine, if_exists='append',index=False)
-            # if externalDB:
-            #     rsd = np.random.randint(0,100)
-            #     rg = np.random.randint(0,100)
-            #     vs = np.random.randint(0,100)
-            #     iS = np.random.randint(0,100)
-            #     vg = np.random.randint(0,100)
-            #     ig = np.random.randint(0,100)
-            #     timestamp = np.datetime64(dt.now()).astype(dt)
-            #     row = externalDB[1](Rsd = rsd,
-            #             Rg = rg,
-            #             Vs = vs,
-            #             Is = iS,
-            #             Vg = vg,
-            #             Ig = ig,
-            #             timeStamp = timestamp)
-            #     externalDB[0].session.add(row)
-            #     externalDB[0].session.commit()
-            #     data2csv[i] = (Rsd,Rox,Vs,Is,Vg,Ig,t)
 
         if saveData:
             df = pd.DataFrame(data2csv)

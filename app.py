@@ -6,7 +6,7 @@ import time
 from datetime import datetime as dt
 
 from flask import Flask,jsonify, render_template, send_file, redirect, url_for, Markup,send_from_directory
-from flask_login import login_required, current_user
+#from flask_login import login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, Integer, String, Float, DateTime, Time, create_engine
 from operator import itemgetter
@@ -30,31 +30,30 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 baseDir = os.getcwd()
 runCheckFile = os.path.join(baseDir,'runnig.txt')
-dataDir = r"/mnt/5a576321-1b84-46e6-ba92-46de6b117d92/GitHub/dataDir/"
-
-# DB setup
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(dataDir, 'data.db')
-engine = create_engine('sqlite:///'+os.path.join(dataDir, 'experiments.db'), echo=False)
-db = SQLAlchemy(app)
+dataDir = r"D:\Swapnil\OneDrive - Indian Institute of Science\001_Project_Data\003_PhD_Presentations\07_Thesis_Chapters\07_DRGN\DRGN_03\26_Annealing_Backside_2Bar_front_2E-4_-10Vdc"
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(dataDir, 'data.db')
+#engine = create_engine('sqlite:///'+os.path.join(dataDir, 'data.db'), echo=False)
+#db = SQLAlchemy(app)
 
 if os.path.exists(runCheckFile):
     os.remove(runCheckFile)
 
-if os.path.exists(os.path.join(dataDir, 'data.db')):
-    os.remove(os.path.join(dataDir, 'data.db'))
+# if os.path.exists(os.path.join(dataDir, 'experiments.db')):
+#     os.remove(os.path.join(dataDir, 'experiments.db'))
 
-class Rvg(db.Model):
-    __tablename__ = 'rvg'
-    #id = Column(Integer, primary_key=True)
-    Rsd = Column(Float)
-    Rg = Column(Float)
-    Vs = Column(Float)
-    Is = Column(Float)
-    Vg = Column(Float)
-    Ig = Column(Float)
-    timeStamp = Column(DateTime,primary_key=True)
 
-db.create_all()
+# class Rvg(db.Model):
+#     __tablename__ = 'rvg'
+#     #id = Column(Integer, primary_key=True)
+#     Rsd = Column(Float)
+#     Rg = Column(Float)
+#     Vs = Column(Float)
+#     Is = Column(Float)
+#     Vg = Column(Float)
+#     Ig = Column(Float)
+#     timeStamp = Column(DateTime,primary_key=True)
+
+#db.create_all()
 
 def db_seed():
     #time.sleep(0.001)
@@ -68,20 +67,20 @@ def db_seed():
     db.session.add(row)
     db.session.commit()
 
-
-# Experiment Definations
+# experiment
 
 paramDict = {'instClass':'KT2461',
              'address':'169.254.0.1',
              'source_channel':'a',
              'sourceVolt':0.05,
              'gate_channel':'b',
-             'gateVolt':-10,
-             'dataPoints':1000,
+             'gateVolt':5   ,
+             'dataPoints':100,
              'dataLocation':dataDir,
-             'experintName':'annealing'}
+             'experintName':'CurrentAnneal'}
 
-rvg = exp.CurrentAnneal(paramDict)
+rvg = exp.CurrentAnneal(paramDict,verbose = False)
+
 
 # Routes
 @app.route('/index/')
@@ -93,28 +92,30 @@ def index():
 def rvgConf():
     return render_template('rvg_config.html')
 
-@app.route('/index/rvgRun/',methods=['POST'])
-def rvgRun():
-    if not os.path.exists(runCheckFile):
-        runFile = open(runCheckFile,"w")
-        runFile.close()
-
-        #rvg.setExperiment()
-        (df,fileName) = rvg.startExperiment(saveData=True, externalDB=[Rvg,db])
-        # rvg.closeExperiment()
-        # f, ax = plt.subplots(figsize=(10, 8))
-        # ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-        # df.plot(x="timeStamp",y="Rsd(Ohm)",ax=ax,colormap='gist_rainbow')
-        # figPath = os.path.join(dataDir,'{}.svg'.format(fileName.split('csv')[0][:-1]))
-        # plt.savefig(figPath)
-        quer = 'SELECT * FROM {}'.format("rvg")
-        df.plot(x='timeStamp',y='Rsd')
-        plt.savefig(os.path.join(dataDir,'rvg.png'))
-
-        os.remove(runCheckFile)
-        return redirect(url_for('expFiles'))
-    else:
-        return redirect(url_for('plotData',experiment_name=rvg.paramDict['experintName']))
+# @app.route('/index/rvgRun/',methods=['POST'])
+# def rvgRun():
+#     if not os.path.exists(runCheckFile):
+#         runFile = open(runCheckFile,"w")
+#         runFile.close()
+#
+#
+#         rvg.setExperiment()
+#         (df,fileName) = rvg.startExperiment(saveData=True)
+#         rvg.closeExperiment()
+#         f, ax = plt.subplots(figsize=(10, 8))
+#         ax.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+#         df.plot(x="timeStamp",y="Rsd(Ohm)",ax=ax,colormap='gist_rainbow')
+#         figPath = os.path.join(dataDir,'{}.svg'.format(fileName.split('csv')[0][:-1]))
+#         plt.savefig(os.path.join(dataDir,'rvg.png'))
+#         # quer = 'SELECT * FROM {}'.format("rvg")
+#         # df = pd.read_sql_query(quer,str(engine.url),parse_dates={'timeStamp':"%Y-%m-%d %H:%M:%S.%f"})
+#         # df.plot(x='timeStamp',y='Rsd')
+#         # plt.savefig(os.path.join(dataDir,'rvg.png'))
+#
+#         os.remove(runCheckFile)
+#         return redirect(url_for('expFiles'))
+#     else:
+#         return redirect(url_for('plotData',experiment_name='rvg'))
 
 @app.route('/index/expFiles/')
 def expFiles():
@@ -131,7 +132,7 @@ def getsvg(fileName):
 @app.route("/index/getData-<experiment_name>/")
 def getData(experiment_name):
     quer = 'SELECT * FROM {}'.format(experiment_name)
-    df = pd.read_sql_query(quer,str(engine.url),parse_dates={'timeStamp':"%Y-%m-%d %H:%M:%S.%f"})
+    df = pd.read_sql_query(quer,str(rvg.dbEngine.url),parse_dates={'timeStamp':"%Y-%m-%d %H:%M:%S.%f"})
     dataDict = {col: list(df[col]) for col in df.columns}
     dataDict['timeStamp'] = [i.strftime("%Y-%m-%d %H:%M:%S.%f") for i in dataDict['timeStamp']]
     response = jsonify(dataDict)
